@@ -175,6 +175,45 @@ namespace AuthServiceAPI.Controllers
 
         }
 
+        [HttpGet("v1/verify-session")]
+        public async Task<IActionResult> VerifySession()
+        {
+            if (!Request.Cookies.TryGetValue("session_id", out var sessionIdStr) ||
+                !Guid.TryParse(sessionIdStr, out var sessionId))
+            {
+                return Unauthorized(new { Response = "Missing or invalid session." });
+            }
+
+            var session = await _dbContext.Sessions
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s =>
+                    s.Id == sessionId &&
+                    s.IsActive &&
+                    s.ExpiresAt > DateTime.UtcNow
+                );
+
+            if (session == null)
+            {
+                return Unauthorized(new { Response = "Session expired or not found." });
+            }
+
+            // Update last accessed timestamp
+            session.LastAccessed = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Response = "Session valid.",
+                User = new
+                {
+                    session.User.Id,
+                    session.User.Email,
+                    session.User.FirstName,
+                    session.User.LastName
+                }
+            });
+        }
+
         private string ComputeDeviceHash(HttpRequest request)
         {
             var userAgent = request.Headers["User-Agent"].ToString();
