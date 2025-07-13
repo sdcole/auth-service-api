@@ -7,6 +7,7 @@ namespace AuthServiceAPI.Data
     public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
+        public DbSet<Session> Sessions { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
@@ -38,6 +39,28 @@ namespace AuthServiceAPI.Data
                 entity.Property(u => u.PasswordHash).IsRequired();
                 entity.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
                 entity.Property(u => u.UpdatedAt).HasDefaultValueSql("NOW()");
+            });
+
+            // Configure the Session entity
+            modelBuilder.Entity<Session>(entity =>
+            {
+                entity.ToTable("sessions");
+
+                entity.HasKey(s => s.Id);
+
+                entity.Property(s => s.Id).HasColumnName("id");
+                entity.Property(s => s.UserId).HasColumnName("user_id");
+                entity.Property(s => s.IpAddress).HasColumnName("ip_address");
+                entity.Property(s => s.DeviceHash).HasColumnName("device_hash");
+                entity.Property(s => s.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
+                entity.Property(s => s.ExpiresAt).HasColumnName("expires_at");
+                entity.Property(s => s.LastAccessed).HasColumnName("last_accessed").HasDefaultValueSql("NOW()");
+                entity.Property(s => s.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+
+                entity.HasOne(s => s.User)
+                      .WithMany()
+                      .HasForeignKey(s => s.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
