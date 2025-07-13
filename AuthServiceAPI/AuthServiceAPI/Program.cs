@@ -1,11 +1,16 @@
+using AuthServiceAPI.Data;
 using AuthServiceAPI.Interfaces;
 using AuthServiceAPI.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
 
 builder.Services.AddScoped<IHashingService, HashingService>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 // Add services to the container.
 
 builder.Services.AddControllers();
